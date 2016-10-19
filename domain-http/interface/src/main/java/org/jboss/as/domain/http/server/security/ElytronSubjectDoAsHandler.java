@@ -26,12 +26,15 @@ import static org.wildfly.common.Assert.checkNotNullParam;
 
 
 import java.security.Principal;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
 import java.util.Set;
 import java.util.stream.StreamSupport;
 
 import javax.security.auth.Subject;
 
 
+import org.jboss.as.controller.AccessAuditContext;
 import org.jboss.as.core.security.RealmGroup;
 import org.jboss.as.core.security.RealmRole;
 import org.jboss.as.core.security.RealmUser;
@@ -52,9 +55,11 @@ import io.undertow.server.HttpServerExchange;
 public class ElytronSubjectDoAsHandler extends SubjectDoAsHandler {
 
     private final SecurityDomain securityDomain;
+    private final HttpHandler wrapped;
 
     public ElytronSubjectDoAsHandler(HttpHandler next, SecurityDomain securityDomain) {
         super(checkNotNullParam("next", next));
+        this.wrapped = next;
         this.securityDomain = checkNotNullParam("securityDomain", securityDomain);
     }
 
@@ -76,8 +81,20 @@ public class ElytronSubjectDoAsHandler extends SubjectDoAsHandler {
                 principals.add(new RealmRole(role));
             });
         }
+        try {
+            // TODO Elytron I expect this now to be broken.
+            AccessAuditContext.doAs(securityIdentity, new PrivilegedExceptionAction<Void>() {
 
-        handleRequest(exchange, subject);
+                @Override
+                public Void run() throws Exception {
+                    wrapped.handleRequest(exchange);
+                    return null;
+                }
+
+            });
+        } catch (PrivilegedActionException e) {
+            throw e.getException();
+        }
     }
 
 }
