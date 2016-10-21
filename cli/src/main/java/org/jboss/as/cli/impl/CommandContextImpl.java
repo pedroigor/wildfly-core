@@ -31,12 +31,14 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -186,6 +188,8 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
 import org.jboss.stdio.StdioContext;
 import org.wildfly.security.auth.callback.CredentialCallback;
+import org.wildfly.security.auth.callback.OAuth2ResourceOwnerCredentialsCallbackHandler;
+import org.wildfly.security.credential.BearerTokenCredential;
 import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.manager.WildFlySecurityManager;
 import org.wildfly.security.password.interfaces.ClearPassword;
@@ -1908,11 +1912,14 @@ class CommandContextImpl implements CommandContext, ModelControllerClientFactory
                                 password = temp.toCharArray();
                             }
                         }
-                        cc.setCredential(new PasswordCredential(ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, password)));
+                        cc.setCredential(new PasswordCredential(ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, Arrays.copyOf(password, password.length))));
                     } else if (digest != null && cc.isCredentialTypeSupported(PasswordCredential.class, DigestPassword.ALGORITHM_DIGEST_MD5)) {
                         // We don't support an interactive use of this callback so it must have been set in advance.
                         final byte[] bytes = CodePointIterator.ofString(digest).hexDecode().drain();
                         cc.setCredential(new PasswordCredential(DigestPassword.createRaw(DigestPassword.ALGORITHM_DIGEST_MD5, username, realm, bytes)));
+                    } else if (cc.isCredentialTypeSupported(BearerTokenCredential.class)) {
+                        OAuth2ResourceOwnerCredentialsCallbackHandler oauth2Handler = new OAuth2ResourceOwnerCredentialsCallbackHandler(this, new URL("http://localhost:8081/auth/realms/photoz/protocol/openid-connect/token"), "elytron-client", "abba3f12-8863-4d3d-a5d6-619520d4d576");
+                        oauth2Handler.handle(new Callback[] {cc});
                     } else {
                         throw new UnsupportedCallbackException(current);
                     }

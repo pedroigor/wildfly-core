@@ -172,6 +172,8 @@ public class SecurityRealmAddHandler implements OperationStepHandler {
                 addPropertiesAuthenticationService(context, authentication.require(PROPERTIES), realmName, serviceTarget, realmBuilder, injectorSet.injector());
             } else if (authentication.hasDefined(USERS)) {
                 addUsersService(context, authentication.require(USERS), realmName, serviceTarget, realmBuilder, injectorSet.injector());
+            } else if (authentication.hasDefined(OAUTH)) {
+                addOAuthAuthenticationService(context, realmName, serviceTarget, realmBuilder, injectorSet.injector());
             }
         }
         if (authorization != null) {
@@ -400,6 +402,20 @@ public class SecurityRealmAddHandler implements OperationStepHandler {
             propsBuilder.addDependency(PathManagerService.SERVICE_NAME, PathManager.class, propsCallbackHandler.getPathManagerInjectorInjector());
             propsBuilder.addDependency(pathName(relativeTo));
         }
+
+        propsBuilder.setInitialMode(ON_DEMAND)
+                .install();
+
+        CallbackHandlerService.ServiceUtil.addDependency(realmBuilder, injector, propsServiceName, false);
+    }
+
+    private void addOAuthAuthenticationService(OperationContext context, String realmName,
+                                                    ServiceTarget serviceTarget, ServiceBuilder<?> realmBuilder,
+                                                    Injector<CallbackHandlerService> injector) throws OperationFailedException {
+        ServiceName propsServiceName = OAuth2BearerCallbackHandler.ServiceUtil.createServiceName(realmName);
+        OAuth2BearerCallbackHandler propsCallbackHandler = new OAuth2BearerCallbackHandler();
+
+        ServiceBuilder<?> propsBuilder = serviceTarget.addService(propsServiceName, propsCallbackHandler);
 
         propsBuilder.setInitialMode(ON_DEMAND)
                 .install();

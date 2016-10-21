@@ -206,6 +206,8 @@ public class SecurityRealmService implements Service<SecurityRealm>, SecurityRea
                         return AuthMechanism.LOCAL;
                     case "PLAIN":
                         return AuthMechanism.PLAIN;
+                    case "OAUTHBEARER":
+                        return AuthMechanism.OAUTHBEARER;
                 }
                 break;
             case "HTTP":
