@@ -32,6 +32,7 @@ import java.security.PrivilegedExceptionAction;
 import javax.security.auth.Subject;
 
 import org.jboss.as.controller.AccessAuditContext;
+import org.wildfly.security.auth.server.SecurityIdentity;
 
 /**
  * HttpHandler to ensure the Subject for the current authenticated user is correctly associated for the request.
@@ -60,13 +61,13 @@ public class SubjectDoAsHandler implements HttpHandler {
         } else {
             useSubject = new Subject();
         }
-        handleRequest(exchange, useSubject);
+        handleRequest(exchange, null);
     }
 
-    void handleRequest(final HttpServerExchange exchange, final Subject subject) throws Exception {
+    void handleRequest(final HttpServerExchange exchange, final SecurityIdentity securityIdentity) throws Exception {
         try {
             // TODO Elytron I expect this now to be broken.
-            AccessAuditContext.doAs(null, new PrivilegedExceptionAction<Void>() {
+            AccessAuditContext.doAs(securityIdentity, new PrivilegedExceptionAction<Void>() {
 
                 @Override
                 public Void run() throws Exception {

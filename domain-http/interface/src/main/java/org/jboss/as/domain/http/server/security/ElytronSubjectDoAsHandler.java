@@ -77,7 +77,7 @@ public class ElytronSubjectDoAsHandler extends SubjectDoAsHandler {
             });
         }
 
-        handleRequest(exchange, subject);
+        handleRequest(exchange, securityIdentity);
     }
 
 }
